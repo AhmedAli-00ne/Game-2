@@ -42,6 +42,19 @@ namespace Project_2
             Y = y;
         }
     }
+    public class Coin
+    {
+        public Bitmap Img;
+        public int X;
+        public int Y;
+        public bool Collected = false;
+        public Coin(Bitmap img, int x, int y)
+        {
+            Img = img;
+            X = x;
+            Y = y;
+        }
+    }
     public partial class Form1 : Form
     {
         Bitmap offImage;
@@ -49,8 +62,10 @@ namespace Project_2
         List<BGLayer> BGLayers = new List<BGLayer>();
         Bitmap bg = new Bitmap("2dh2tcn(6).png");
         Player Player = new Player(new Bitmap("Player/PrimitivePlayerIdleRight/PlayerIdle (1).png"), 100, 100);
+        Coin coin = new Coin(new Bitmap("Coin/1.png"), 470, 375-15);
         Rectangle playerRect;
         List<Rectangle> rects = new List<Rectangle>();
+        int x = 0;
         public Form1()
         {
             InitializeComponent();
@@ -114,6 +129,7 @@ namespace Project_2
 
         private void T_Tick(object? sender, EventArgs e)
         {
+            CoinCollision();
             AnimatePlayer();
             CollisionDetection();
             DoubleBuffer(this.CreateGraphics());
@@ -153,15 +169,23 @@ namespace Project_2
                     g.DrawImage(BGLayers[i].Img, BGLayers[i].NextX, 0);
                 }
             }
-            g.DrawImage(bg, 0, 0);
-            g.DrawRectangle(Pens.Black, 0, 375, 395, 70);
-            g.DrawRectangle(Pens.Black, 345, 360, 50, 15);
-            g.DrawRectangle(Pens.Black, 357, 348, 37, 12);
-            g.DrawRectangle(Pens.Black, 369, 336, 24, 12);
-            g.DrawRectangle(Pens.Black, 380, 323, 13, 12);
-            g.DrawRectangle(Pens.Black, 440, 375, 355, 70);
+            g.DrawImage(bg, x, 0);
+            g.DrawRectangles(Pens.Black, rects.ToArray());
             g.DrawImage(Player.Img, Player.X, Player.Y);
             g.DrawRectangle(Pens.Red, playerRect);
+            if (!coin.Collected)
+            {
+                g.DrawImage(coin.Img, coin.X, coin.Y);
+            }
+        }
+
+        void CoinCollision()
+        {
+            if (playerRect.IntersectsWith(new Rectangle(coin.X, coin.Y, coin.Img.Width, coin.Img.Height)))
+            {
+                coin.Collected = true;
+                Player.CoinsCollected++;
+            }
         }
         void CollisionDetection()
         {
@@ -201,7 +225,7 @@ namespace Project_2
                     {
                         if(minLeft > rects[i].X)
                         {
-                            minLeft = rects[i].X;
+                            minLeft = rects[i].X + rects[i].Width;
                         }
                     }
                 }
@@ -213,6 +237,14 @@ namespace Project_2
             else
             {
                 MaxRight = minRight;
+            }
+            if (minLeft == 99999)
+            {
+                MaxLeft = 0;
+            }
+            else
+            {
+                MaxLeft = minLeft;
             }
             PlayerMovement(MaxRight, MaxLeft);
         }
@@ -226,13 +258,11 @@ namespace Project_2
             else
             {
                 Player.LandingStatus = false;
-                Player.ImgNo = 1;
             }
             playerRect = new Rectangle(Player.X, Player.Y, Player.Img.Width, Player.Img.Height);
         }
         void PlayerMovement(int RightX, int LeftX)
         {
-            Console.WriteLine("Player X is at: " + (Player.X + Player.Img.Width).ToString() + " And Next Col at: " + RightX.ToString());
             if (Player.JumpStatus)
             {
                 Player.Y -= Player.Speed+30;
@@ -240,11 +270,34 @@ namespace Project_2
             }
             else if (Player.RunRightStatus && !Player.RunLeftStatus && Player.X + Player.Img.Width < RightX)
             {
-                Player.X += Player.Speed;
+                if (Player.X >= 100)
+                {
+                    for (int i = 0; i < rects.Count; i++)
+                    {
+                        rects[i] = new Rectangle(rects[i].X - Player.Speed, rects[i].Y, rects[i].Width, rects[i].Height);
+                    }
+                    x -= Player.Speed;
+                }
+                else
+                {
+                    Player.X += Player.Speed;
+                }
+                coin.X -= Player.Speed;
             }
             else if(Player.RunLeftStatus && !Player.RunRightStatus && Player.X > LeftX)
             {
-                Player.X -= Player.Speed;
+                if (x + Player.Speed < 0)
+                {
+                    for (int i = 0; i < rects.Count; i++)
+                    {
+                        rects[i] = new Rectangle(rects[i].X + Player.Speed, rects[i].Y, rects[i].Width, rects[i].Height);
+                    }
+                    x += Player.Speed;
+                }
+                else if (Player.X + Player.Speed > 0)
+                {
+                    Player.X -= Player.Speed;
+                }
             }
             else if (!Player.RunRightStatus && !Player.RunLeftStatus && !Player.JumpStatus && !Player.LandingStatus)
             {
@@ -258,20 +311,28 @@ namespace Project_2
             {
                 if (Player.IdleStatus)
                 {
+                    Console.WriteLine("Player is Idle and facing Right - Photo Num: " + Player.ImgNo.ToString());
                     Player.Img = new Bitmap("Player/PrimitivePlayerIdleRight/PlayerIdle (" + Player.ImgNo.ToString() + ").png");
-                    Player.ImgNo++;
                     if (Player.ImgNo == 12)
                     {
                         Player.ImgNo = 1;
+                    }
+                    else
+                    {
+                        Player.ImgNo++;
+                    
                     }
                 }
                 else if (Player.RunRightStatus && !Player.LandingStatus && !Player.RunLeftStatus)
                 {
                     Player.Img = new Bitmap("Player/PrimitivePlayerRunRight/PlayerRun (" + Player.ImgNo.ToString() + ").png");
-                    Player.ImgNo++;
-                    if (Player.ImgNo == 8)
+                    if (Player.ImgNo == 8 || Player.ImgNo > 8)
                     {
                         Player.ImgNo = 1;
+                    }
+                    else
+                    {
+                        Player.ImgNo++;
                     }
                 }
                 else if (Player.JumpStatus)
@@ -287,6 +348,7 @@ namespace Project_2
             {
                 if (Player.IdleStatus)
                 {
+                    Console.WriteLine("Player is Idle and facing Left - Photo Num: " + Player.ImgNo.ToString());
                     Player.Img = new Bitmap("Player/PrimitivePlayerIdleLeft/PlayerIdle (" + Player.ImgNo.ToString() + ").png");
                     if (Player.ImgNo == 12)
                     {
@@ -300,7 +362,7 @@ namespace Project_2
                 else if (Player.RunLeftStatus && !Player.LandingStatus && !Player.RunRightStatus)
                 {
                     Player.Img = new Bitmap("Player/PrimitivePlayerRunLeft/PlayerRun (" + Player.ImgNo.ToString() + ").png");
-                    if (Player.ImgNo == 8)
+                    if (Player.ImgNo == 8 || Player.ImgNo > 8)
                     {
                         Player.ImgNo = 1;
                     }
