@@ -65,6 +65,7 @@ namespace Project_2
         Coin coin = new Coin(new Bitmap("Coin/1.png"), 470, 375-15);
         Rectangle playerRect;
         List<Rectangle> rects = new List<Rectangle>();
+        List<Rectangle> StairsRects = new List<Rectangle>();
         int x = 0;
         public Form1()
         {
@@ -94,7 +95,7 @@ namespace Project_2
 
         private void Form1_KeyDown(object? sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Space)
+            if (e.KeyCode == Keys.Space && !Player.LandingStatus)
             {
                 Player.JumpStatus = true;
                 Player.IdleStatus = false;
@@ -144,7 +145,11 @@ namespace Project_2
                 BGLayers[i - 1].Img = new Bitmap(BGLayers[i - 1].Img, new Size(this.ClientSize.Width, this.ClientSize.Height));
             }
             rects.Add(new Rectangle(0, 375, 395, 70));
-            rects.Add(new Rectangle(345, 360, 50, 15));
+            StairsRects.Add(new Rectangle(345, 360, 50, 12));
+            StairsRects.Add(new Rectangle(357, 348, 37, 12));
+            StairsRects.Add(new Rectangle(369, 336, 24, 12));
+            StairsRects.Add(new Rectangle(380, 323, 13, 12));
+            rects.Add(new Rectangle(345, 360, 50, 12));
             rects.Add(new Rectangle(357, 348, 37, 12));
             rects.Add(new Rectangle(369, 336, 24, 12));
             rects.Add(new Rectangle(380, 323, 13, 12));
@@ -277,12 +282,12 @@ namespace Project_2
                         rects[i] = new Rectangle(rects[i].X - Player.Speed, rects[i].Y, rects[i].Width, rects[i].Height);
                     }
                     x -= Player.Speed;
+                    coin.X -= Player.Speed;
                 }
                 else
                 {
                     Player.X += Player.Speed;
                 }
-                coin.X -= Player.Speed;
             }
             else if(Player.RunLeftStatus && !Player.RunRightStatus && Player.X > LeftX)
             {
@@ -293,17 +298,19 @@ namespace Project_2
                         rects[i] = new Rectangle(rects[i].X + Player.Speed, rects[i].Y, rects[i].Width, rects[i].Height);
                     }
                     x += Player.Speed;
+                    coin.X += Player.Speed;
                 }
                 else if (Player.X + Player.Speed > 0)
                 {
                     Player.X -= Player.Speed;
                 }
+                
             }
             else if (!Player.RunRightStatus && !Player.RunLeftStatus && !Player.JumpStatus && !Player.LandingStatus)
             {
                 Player.IdleStatus = true;
             }
-            playerRect = new Rectangle(Player.X, Player.Y, Player.Img.Width, Player.Img.Height);
+            playerRect = new Rectangle(Player.X, Player.Y, Player.Img.Width + 10, Player.Img.Height);
         }
         void AnimatePlayer()
         {
